@@ -1,8 +1,6 @@
 import csv
-import math
-import scipy.fft
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 
@@ -12,33 +10,20 @@ def read_column(n):
         return [float(line[n]) for line in csv_reader]
 
 
-def fft(values, window, starting):
-    freq_list = []
-    for i in range(0, len(values) - window, window):
-        freq = scipy.fft.fft(values[i:i + window])[starting:window // 2]
-        freq = np.abs(freq)
-        freq_list.append(freq)
-    return freq_list
-
-
-def analyse_freq(freq_list, starting):
+def analyse_freq(values, window, med):
     activity_list = []
-    for freq in freq_list:
-        max_freq = np.max(freq)
-        i_freq = np.where(freq == max_freq)[0]
-        mx = np.sum(freq) / len(freq)
-        mx2 = np.sum(freq ** 2) / len(freq)
-        disp = mx2 - mx ** 2
-        activity_list.append(30 <= i_freq + starting <= 50
-                             and max_freq >= mx + math.sqrt(disp))
+    for i in range(0, len(values) - window, window):
+        avg = np.average(values[i:i + window])
+        activity_list.append(avg > med)
     return activity_list
 
 
-def plot(dots, activity_list, window):
+def plot(dots, med, activity_list, window):
     fig, ax = plt.subplots()
     ax.yaxis.set_major_locator(MaxNLocator(20))
     ax.plot(dots)
-    fig.set_size_inches(16, 9)
+    ax.plot(med)
+    fig.set_size_inches(15, 7)
     for i in range(len(activity_list)):
         if activity_list[i]:
             ax.axvspan(i * window, (i + 1) * window, alpha=0.5, color='red')
@@ -48,10 +33,10 @@ def plot(dots, activity_list, window):
 def main():
     column = read_column(0)
     window = 200
-    starting = 20
-    freq_list = fft(column, window, starting)
-    activity_list = analyse_freq(freq_list, starting)
-    plot(column, activity_list, window)
+    med = np.median(column)
+    meds = [med for _ in range(len(column))]
+    activity_list = analyse_freq(column, window, med)
+    plot(column, meds, activity_list, window)
 
 
 if __name__ == '__main__':
